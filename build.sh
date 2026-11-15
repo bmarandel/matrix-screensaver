@@ -7,7 +7,7 @@ rm -rf build && mkdir -p "$B/Contents/MacOS" "$B/Contents/Resources"
 for arch in x86_64 arm64; do
   swiftc -O -parse-as-library -module-name Matrix -target $arch-apple-macos12 \
     -emit-library -o build/Matrix-$arch Sources/*.swift \
-    -framework ScreenSaver -framework AppKit -framework CoreText
+    -framework ScreenSaver -framework AppKit -framework CoreText -framework Metal -framework QuartzCore
 done
 lipo -create build/Matrix-x86_64 build/Matrix-arm64 -output "$B/Contents/MacOS/Matrix"
 cp Info.plist "$B/Contents/"
