@@ -1,19 +1,70 @@
 # Matrix — screensaver macOS
 
-Pluie numérique façon *Matrix* qui finit par révéler le logo Apple .
+Pluie numérique façon *Matrix* qui finit par révéler le logo Apple.
 Port Swift natif de l'effet `matrix` de [TerminalTextEffects](https://github.com/ChrisBuilds/terminaltexteffects)
 (MIT), l'effet utilisé par le screensaver d'Omarchy (`omarchy-screensaver` → `tte … --frame-rate 120`).
 
 Cycle : pluie 15 s → remplissage de l'écran → résolution du logo (dégradé radial vert) → pause 10 s → on recommence.
 
-## Prérequis
+![Pluie numérique](docs/rain.jpg)
+![Logo final](docs/logo.jpg)
 
-Xcode (ou les Command Line Tools) pour `swiftc`, `lipo`, `codesign`. Mac compatible Metal (tous depuis 2012). Pas de projet Xcode :
-`build.sh` compile directement avec `swiftc`. Cible macOS 12+, testé sur macOS 26 (Intel).
+Compatible macOS 12 ou plus récent, Mac Intel et Apple Silicon (binaire universel).
+Testé sur macOS 26 (Intel).
 
-## Build & installation
+## Installation
+
+### Option 1 — Terminal (recommandé)
 
 ```sh
+curl -L -o /tmp/Matrix.saver.zip \
+  https://github.com/bmarandel/matrix-screensaver/releases/latest/download/Matrix.saver.zip
+mkdir -p ~/Library/"Screen Savers"
+rm -rf ~/Library/"Screen Savers"/Matrix.saver
+ditto -x -k /tmp/Matrix.saver.zip ~/Library/"Screen Savers"
+killall legacyScreenSaver 2>/dev/null; true     # oublie une éventuelle ancienne version en cache
+```
+
+### Option 2 — Navigateur
+
+1. Télécharger `Matrix.saver.zip` depuis la page
+   [Releases](https://github.com/bmarandel/matrix-screensaver/releases/latest) et le décompresser
+   (Safari le fait tout seul).
+2. Double-cliquer sur `Matrix.saver` → **Installer pour cet utilisateur uniquement**.
+
+Le bundle est signé en *ad hoc* (pas de certificat Apple Developer, pas de notarisation). Si macOS
+refuse de l'ouvrir ou que l'économiseur reste vide, retirer l'attribut de quarantaine ajouté par le
+navigateur, ou passer par **Réglages Système → Confidentialité et sécurité → Ouvrir quand même** :
+
+```sh
+xattr -dr com.apple.quarantine ~/Library/"Screen Savers"/Matrix.saver
+killall legacyScreenSaver 2>/dev/null; true
+```
+
+### Choisir l'économiseur
+
+**Réglages Système → Économiseur d'écran** → **Matrix** (section *Autre*).
+
+Police : [JetBrains Mono Nerd Font](https://www.nerdfonts.com/font-downloads) si elle est installée
+(`JetBrainsMonoNL Nerd Font Mono`), sinon Menlo, toujours présente.
+
+### Désinstaller
+
+```sh
+rm -rf ~/Library/"Screen Savers"/Matrix.saver
+killall legacyScreenSaver 2>/dev/null; true
+```
+
+puis choisir un autre économiseur dans les Réglages.
+
+## Compiler depuis les sources
+
+Prérequis : Xcode ou les Command Line Tools (`xcode-select --install`) pour `swiftc`, `lipo`,
+`codesign`. Pas de projet Xcode : `build.sh` compile directement avec `swiftc`.
+
+```sh
+git clone https://github.com/bmarandel/matrix-screensaver.git
+cd matrix-screensaver
 ./build.sh            # → build/Matrix.saver + build/Matrix.saver.zip (universel Intel + Apple Silicon)
 ./build.sh --install  # + copie dans ~/Library/Screen Savers et relance legacyScreenSaver
 ```
@@ -22,23 +73,9 @@ Ce que fait `build.sh` : compile une dylib par architecture, les fusionne avec `
 bundle (`Info.plist`, `Resources/`), retire les attributs étendus (`xattr -cr`, sinon `codesign` refuse :
 *resource fork, Finder information… not allowed*), signe en ad hoc et zippe avec `ditto`.
 
-**Sans compiler**, depuis la release (dépôt privé → `gh`, pas `curl`) :
-
-```sh
-gh release download -R bmarandel/matrix-screensaver -p Matrix.saver.zip -D /tmp
-ditto -x -k /tmp/Matrix.saver.zip ~/Library/"Screen Savers"
-```
-
-C'est ce que fait `install-tools.sh` de [macos-config](https://github.com/bmarandel/macos-config).
-
-**Sélection** : Réglages Système → Économiseur d'écran → **Matrix**, ou en ligne de commande avec
-`macos-config/set-screensaver.py ~/Library/Screen\ Savers/Matrix.saver` (appelé par `macos-defaults.sh`).
-Depuis macOS 14 le choix n'est plus dans `defaults -currentHost com.apple.screensaver` (ignoré) mais dans
-`~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`, une entrée `Idle` par écran et
-par Space.
-
-**Désinstaller** : `rm -rf ~/Library/"Screen Savers"/Matrix.saver; killall legacyScreenSaver`, puis
-choisir un autre économiseur.
+Depuis macOS 14, le choix de l'économiseur n'est plus dans `defaults -currentHost com.apple.screensaver`
+(ignoré) mais dans `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`, une entrée
+`Idle` par écran et par Space — à savoir pour l'automatiser.
 
 ## Tester sans lancer l'économiseur
 
@@ -98,11 +135,14 @@ des captures PNG et mesure le temps CPU du processus. Mesures sur le MacBook Pro
 
 ## Release
 
-Le build est publié en asset de release (`Matrix.saver.zip`), installé par
-[macos-config](https://github.com/bmarandel/macos-config) (`install-tools.sh`) :
+Le build est publié en asset de release (`Matrix.saver.zip`) ; le lien
+`releases/latest/download/Matrix.saver.zip` pointe toujours vers la dernière version :
 
 ```sh
 ./build.sh && gh release create vX.Y.Z build/Matrix.saver.zip --title vX.Y.Z --notes "…"
 ```
 
-Licence MIT (voir `LICENSE`), effet porté de TerminalTextEffects.
+## Licence
+
+MIT (voir `LICENSE`), effet porté de [TerminalTextEffects](https://github.com/ChrisBuilds/terminaltexteffects).
+Apple et le logo Apple sont des marques d'Apple Inc. ; projet personnel non affilié à Apple.
