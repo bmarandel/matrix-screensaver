@@ -93,6 +93,26 @@ des captures PNG et mesure le temps CPU du processus. Mesures sur le MacBook Pro
 | 1440×900 | ~60 % d'un cœur | ~3 % |
 | 2560×2160 | 96 % (plafonne à 16 fps) | ~8 % (~10 % mesuré dans `legacyScreenSaver`) |
 
+## Tester et déboguer dans le vrai hôte
+
+`tools/preview` ne reproduit pas l'hôte système : sous macOS 14+ l'économiseur tourne dans
+`legacyScreenSaver`, affiché à distance (ViewBridge), lancé par `ScreenSaverEngine` ou par
+`WallpaperAgent` (écran verrouillé). Pour un test réel (session déverrouillée, ne pas toucher la souris) :
+
+```sh
+./build.sh --install
+open -a ScreenSaverEngine; sleep 4
+P=$(pgrep -n legacyScreenSaver); ps -o time= -p $P; sleep 10; ps -o time= -p $P   # temps CPU sur 10 s
+killall ScreenSaverEngine
+```
+
+- `killall ScreenSaverEngine` n'émet pas `willstop` : l'instance peut rester en vie, c'est normal ici.
+- Traces : `os_log("…%{public}@…")` dans le code (sans `%{public}` le texte est masqué), puis
+  `/usr/bin/log show --last 1m --predicate 'process == "legacyScreenSaver"'`.
+  Dans zsh, `log` est une commande interne : toujours écrire `/usr/bin/log`.
+- `screencapture` capture bien l'économiseur affiché : pratique pour vérifier qu'il n'est pas noir.
+- Écran verrouillé : `ScreenSaverEngine` n'affiche rien et se ferme aussitôt ; tester session ouverte.
+
 ## Personnaliser
 
 - **Logo** : `Resources/logo.txt` (art en blocs `█ ▀ ▄`, dessinés en rectangles pleins).
@@ -138,9 +158,15 @@ des captures PNG et mesure le temps CPU du processus. Mesures sur le MacBook Pro
 Le build est publié en asset de release (`Matrix.saver.zip`) ; le lien
 `releases/latest/download/Matrix.saver.zip` pointe toujours vers la dernière version :
 
+1. Monter `CFBundleShortVersionString` (et `CFBundleVersion`) dans `Info.plist`.
+2. Tester hors écran (`tools/preview`) **et** dans le vrai hôte (section ci-dessus).
+3. Publier :
+
 ```sh
 ./build.sh && gh release create vX.Y.Z build/Matrix.saver.zip --title vX.Y.Z --notes "…"
 ```
+
+Non testé à ce jour : Mac Apple Silicon, écran Retina en conditions réelles.
 
 ## Licence
 
